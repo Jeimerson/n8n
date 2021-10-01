@@ -1,0 +1,372 @@
+{
+  "name": "TelegramMeteoBot",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        680,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://dadesobertes.valls.cat/api/3/action/datastore_search_sql?sql=SELECT%20*%20from%20%22de8f4295-d72c-41dc-a93b-2e21a679029d%22%20ORDER%20BY%20_id%20DESC%20LIMIT%201",
+        "allowUnauthorizedCerts": true,
+        "responseFormat": "=json",
+        "options": {}
+      },
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1892,
+        705
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "temp",
+              "value": "={{$json[\"result\"][\"records\"][0][\"TEMP\"]}}"
+            },
+            {
+              "name": "humidity",
+              "value": "={{$json[\"result\"][\"records\"][0][\"HUM\"]}}"
+            },
+            {
+              "name": "wind",
+              "value": "={{$json[\"result\"][\"records\"][0][\"VEL_VENT\"]}}"
+            },
+            {
+              "name": "wind_dir",
+              "value": "={{$json[\"result\"][\"records\"][0][\"DIR_VEL_VENT\"]}}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{$json[\"result\"][\"records\"][0][\"HORA\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        2072,
+        705
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://quotes.rest/qod?language=en",
+        "allowUnauthorizedCerts": true,
+        "options": {}
+      },
+      "name": "HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1902,
+        885
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        1162,
+        525
+      ],
+      "webhookId": "cde52047-8d20-4460-ac34-0a948dd089b0",
+      "executeOnce": false,
+      "credentials": {
+        "telegramApi": "Telegram account"
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1001543814894",
+        "text": "=Hola **{{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"first_name\"]}}** buenos días\nSoy el bot de prueba de N8N y te doy la bienvenida\nSi quieres conocer los datos meteorológicos de Valls, escribe METEO\ny si quieres un consejo ... llamame por mi nombre BOT8",
+        "additionalFields": {}
+      },
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1892,
+        515
+      ],
+      "credentials": {
+        "telegramApi": "Telegram account"
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "string": [
+            {
+              "value1": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"text\"]}}",
+              "operation": "contains",
+              "value2": "=hola"
+            },
+            {
+              "value1": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"text\"]}}",
+              "operation": "contains",
+              "value2": "=\"buenos días\""
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "name": "IF_SALUDO",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1662,
+        525
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"text\"]}}",
+              "operation": "contains",
+              "value2": "=METEO"
+            }
+          ]
+        }
+      },
+      "name": "IF_METEO",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1661,
+        686
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"text\"]}}",
+              "operation": "contains",
+              "value2": "BOT8"
+            }
+          ]
+        }
+      },
+      "name": "IF_FRASE",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1612,
+        865
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "-1001543814894",
+        "text": "=El último registro efectuado a las  {{$node[\"Set\"].json[\"timestamp\"]}} indica que la temperatura en la Plaça del Blat de Valls es de {{$node[\"Set\"].json[\"temp\"]}}\nLa humedad es de {{$node[\"Set\"].json[\"humidity\"]}}\nEl viento con dirección {{$node[\"Set\"].json[\"wind_dir\"]}} es de {{$node[\"Set\"].json[\"wind\"]}}",
+        "additionalFields": {}
+      },
+      "name": "Telegram_METEO",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2242,
+        705
+      ],
+      "credentials": {
+        "telegramApi": "Telegram account"
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1001543814894",
+        "text": "={{$node[\"HTTP Request1\"].json[\"contents\"][\"quotes\"][0][\"quote\"]}}  by {{$node[\"HTTP Request1\"].json[\"contents\"][\"quotes\"][0][\"author\"]}}",
+        "additionalFields": {}
+      },
+      "name": "Telegram_FRASE",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2102,
+        875
+      ],
+      "credentials": {
+        "telegramApi": "Telegram account"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "-1001543814894",
+        "file": "={{$node[\"HTTP Request1\"].json[\"contents\"][\"quotes\"][0][\"background\"]}}",
+        "additionalFields": {}
+      },
+      "name": "Telegram_FOTO",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2302,
+        875
+      ],
+      "credentials": {
+        "telegramApi": "Telegram account"
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1001543814894",
+        "text": "=No te entiendo {{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"first_name\"]}}\nTe puedo dar la información del tiempo si me preguntas METEO y si quieres que te explique algo llamame por mi nombre BOT8",
+        "additionalFields": {}
+      },
+      "name": "Telegram_NO_FRASE",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1770,
+        1040
+      ],
+      "credentials": {
+        "telegramApi": "Telegram account"
+      }
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF_SALUDO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_SALUDO": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF_METEO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_METEO": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF_FRASE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_FRASE": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram_NO_FRASE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Telegram_METEO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Telegram_FRASE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram_FRASE": {
+      "main": [
+        [
+          {
+            "node": "Telegram_FOTO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "Europe/Madrid",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "executionTimeout": -1
+  },
+  "id": 1
+}
